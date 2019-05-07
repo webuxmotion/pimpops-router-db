@@ -11,7 +11,7 @@ class Provider extends AbstractProvider {
 
   public $config = [
       'host' => 'localhost',
-      'db_name' => 'pimpops_router',
+      'db_name' => 'php_pimpops_api',
       'username' => 'root',
       'password' => '1111',
       'charset' => 'utf8'

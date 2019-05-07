@@ -19,7 +19,7 @@ class Starter {
 
     try {
 
-      $this->router->add('home', '/', 'HomeController:index');
+      $this->router->add('user-register', '/api/users/register', 'UserController:register', 'POST');
       $this->router->add('send-message', '/send_message/(number:any)', 'HomeController:sendMessage');
       $this->router->add('news', '/news', 'HomeController:news');
       $this->router->add('news-one', '/news/(id:int)', 'HomeController:oneNew');
