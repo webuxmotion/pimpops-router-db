@@ -20,9 +20,9 @@ class Starter {
     try {
 
       $this->router->add('user-register', '/api/users/register', 'UserController:register', 'POST');
-      $this->router->add('send-message', '/send_message/(number:any)', 'HomeController:sendMessage');
-      $this->router->add('news', '/news', 'HomeController:news');
-      $this->router->add('news-one', '/news/(id:int)', 'HomeController:oneNew');
+      $this->router->add('user-login', '/api/users/login', 'UserController:login', 'POST');
+      $this->router->add('user-auth', '/api/users/auth', 'UserController:auth');
+      
 
       $routerDispatch = $this->router->dispatch(Common::getMethod(), Common::getPathUrl());
 
@@ -43,4 +43,3 @@ class Starter {
     }
   }
 }
-?>

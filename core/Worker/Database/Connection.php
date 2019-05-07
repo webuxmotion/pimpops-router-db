@@ -26,7 +26,7 @@ class Connection {
 
     return $this;
   }
-  
+
   public function execute($sql, $values = []) {
         $set = "";
         foreach ($values as $key => $field) {
