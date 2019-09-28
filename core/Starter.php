@@ -22,6 +22,7 @@ class Starter {
       $this->router->add('user-register', '/api/users/register', 'UserController:register', 'POST');
       $this->router->add('user-login', '/api/users/login', 'UserController:login', 'POST');
       $this->router->add('user-auth', '/api/users/auth', 'UserController:auth');
+      $this->router->add('index', '/', 'HomeController:index');
       
 
       $routerDispatch = $this->router->dispatch(Common::getMethod(), Common::getPathUrl());

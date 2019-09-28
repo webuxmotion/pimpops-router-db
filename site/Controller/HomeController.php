@@ -2,16 +2,18 @@
 
 namespace Site\Controller;
 
+use Core\Worker\Auth\Auth;
+
 class HomeController extends SiteController {
+
+  public function __construct($di) {
+    $this->auth = new Auth($di);
+  }
  
   public function index() {
 
-    $contactBook = $this->di->get('contactBook');
-    $list = $contactBook->setList()->getList();
-
-    foreach ($list as $item) {
-      $link = ' <a href="/send_message/' . $item->number . '">Send message</a>';
-      echo $item->name . ' : ' . $item->number . $link . '<br>';
+    if ($this->auth->auth($this->di)) {
+      echo 'some secret info';
     }
   }
 

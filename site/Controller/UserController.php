@@ -10,19 +10,26 @@ use \Firebase\JWT\JWT;
 class UserController extends SiteController {
 
   protected $auth;
+  protected $user;
 
   public function __construct($di) {
     parent::__construct($di);
 
-    $this->auth = new Auth();
+    $this->auth = new Auth($di);
   }
  
   public function register() {
     $req = json_decode(file_get_contents('php://input'), true);
 
+    $options = [
+      'cost' => 12,
+    ];
+
+    $password_hash = password_hash(SECRET . $req['password'], PASSWORD_BCRYPT, $options);
+
     $data = [
       'email'    => isset($req['email'])    ? $req['email']         : null,
-      'password' => isset($req['password']) ? md5(SECRET . $req['password']) : null,
+      'password' => isset($req['password']) ? $password_hash : null,
       'name'     => isset($req['name'])     ? $req['name']          : null,
       'lastname' => isset($req['lastname']) ? $req['lastname']      : null,
       'cart'     => '[]',
@@ -35,6 +42,44 @@ class UserController extends SiteController {
 
     echo json_encode([
       "success" => true
+    ], JSON_PRETTY_PRINT);
+  }
+
+  public function exceptionHandler() {
+
+    $user = $this->user;
+
+    $tokenId    = base64_encode($this->auth->salt());
+    $issuedAt   = time();
+    $notBefore  = $issuedAt + 0;             //Adding 10 seconds
+    $expire     = $notBefore + 60 + 60;            // Adding 60 * 60 seconds
+    $serverName = 'http://localhost'; // Retrieve the server name from config ile
+
+    $data = [
+        'iat'  => $issuedAt,         // Issued at: time when the token was generated
+        'jti'  => $tokenId,          // Json Token Id: an unique identifier for the token
+        'iss'  => $serverName,       // Issuer
+        'nbf'  => $notBefore,        // Not before
+        'exp'  => $expire,           // Expire
+        'data' => [                  // Data related to the signer user
+            'userId'   => $user->id  // userid from the users table
+        ]
+    ];
+
+    $jwt = JWT::encode($data, SECRET, 'HS512'); 
+
+    $sql = '
+      UPDATE user
+      SET token = "' . $jwt . '"
+      WHERE id=' . $user->id . '
+    ';
+    $this->db->execute($sql);
+
+    // Set cookie
+    $this->auth->authorize($jwt);
+
+    echo json_encode([
+      "loginSuccess" => true
     ], JSON_PRETTY_PRINT);
   }
 
@@ -53,42 +98,29 @@ class UserController extends SiteController {
     if (!empty($query)) {
       $user = $query[0];
 
+      $this->user = $user;
+
       // Check the password
-      if ($user->password === md5(SECRET . $req['password'])) {
+      
+      if (password_verify(SECRET . $req['password'], $user->password)) {
 
-        $tokenId    = base64_encode($this->auth->salt());
-        $issuedAt   = time();
-        $notBefore  = $issuedAt + 0;             //Adding 10 seconds
-        $expire     = $notBefore + 60 * 60;            // Adding 60 * 60 seconds
-        $serverName = 'http://localhost'; // Retrieve the server name from config ile
+        set_exception_handler([$this, 'exceptionHandler']);
+        
+        $decoded = JWT::decode($user->token, SECRET, array('HS512'));
 
-        $data = [
-            'iat'  => $issuedAt,         // Issued at: time when the token was generated
-            'jti'  => $tokenId,          // Json Token Id: an unique identifier for the token
-            'iss'  => $serverName,       // Issuer
-            'nbf'  => $notBefore,        // Not before
-            'exp'  => $expire,           // Expire
-            'data' => [                  // Data related to the signer user
-                'userId'   => $user->id  // userid from the users table
-            ]
-        ];
+        if ($decoded) {
+          $this->auth->authorize($user->token);
 
-        $jwt = JWT::encode($data, SECRET, 'HS512'); 
+          echo json_encode([
+            "loginSuccess" => true
+          ], JSON_PRETTY_PRINT);
+        }
 
-        $sql = '
-          UPDATE user
-          SET token = "' . $jwt . '"
-          WHERE id=' . $user->id . '
-        ';
-        $this->db->execute($sql);
 
-        // Set cookie
-        $this->auth->authorize($jwt);
-
-        echo json_encode([
-          "loginSuccess" => true
-        ], JSON_PRETTY_PRINT);
+        
       } else {
+        Cookie::delete('w_auth');
+
         echo json_encode([
           "loginSuccess" => false,
           "message" => "Wrong password"
@@ -103,7 +135,9 @@ class UserController extends SiteController {
   }
 
   public function auth() {
-    $jwt = Cookie::get('w_auth');          
+
+    $jwt = Cookie::get('w_auth');
+              
     if (!$jwt) {
       echo json_encode([
           "isAuth" => false,

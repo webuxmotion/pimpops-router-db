@@ -10,10 +10,10 @@ class Provider extends AbstractProvider {
   public $workerName = 'db';
 
   public $config = [
-      'host' => 'localhost',
-      'db_name' => 'php_pimpops_api',
-      'username' => 'root',
-      'password' => '1111',
+      'host' => 'mysql',
+      'db_name' => 'moe_db',
+      'username' => 'moeuser',
+      'password' => 'moepass',
       'charset' => 'utf8'
     ];
 
